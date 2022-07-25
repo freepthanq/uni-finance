@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+{% block main %}
+        <form action="/quote" method="post" class="form_bottom">
+            <div id="quote" class="mb-3" onchange="ajax_request(this.value);">
+                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="symbol" name="symbol" placeholder="Stock’s symbol" type="text">
+            </div>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+        
+       <p>{{ quoted }}</p>
+{% endblock %}
+
