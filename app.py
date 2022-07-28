@@ -7,8 +7,6 @@ from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from helpers import apology, login_required, lookup, usd
-import sqlalchemy
-
 
 # Configure application
 app = Flask(__name__)
