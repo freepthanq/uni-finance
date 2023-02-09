@@ -1,7 +1,11 @@
 import os
 import requests
 import urllib.parse
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
+plt.rc('figure', max_open_warning=0)
 from flask import redirect, render_template, request, session
 from functools import wraps
 
@@ -62,3 +66,21 @@ def lookup(symbol):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+
+# Create a plot with the predicted prices of a chosen stock share
+def make_predictions(symbol):
+    data = pd.read_csv('data/predicted_stock_price.csv')
+    days = np.array(data['day'])
+    prices = np.array(data[symbol])
+    fig, ax = plt.subplots()
+    ax.plot(days, prices, label=f'price of {symbol} in $')
+    ax.grid()
+    ax.set_xlabel('day')
+    ax.set_ylabel('price in $')
+    plt.title(f'Predicted price of {symbol}')
+    plt.savefig(f'static/{symbol}.png')
+    plt.clf()
+    return render_template("predict.html", img=symbol)
+
+

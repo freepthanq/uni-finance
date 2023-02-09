@@ -6,7 +6,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required, lookup, usd, make_predictions
 
 # Configure application
 app = Flask(__name__)
@@ -23,11 +23,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-uri = os.getenv("DATABASE_URL")
-if uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://")
-db = SQL(uri)
-
+db = SQL("sqlite:///data/finance.db")
 # Make sure API key is set
 if not os.environ.get("API_KEY"):
     raise RuntimeError("API_KEY not set")
@@ -151,20 +147,21 @@ def login():
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-
+        username = request.form.get("username")
+        password = request.form.get("password")
         # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 400)
+        if not username:
+            return apology("Must provide username", 400)
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 400)
+            return apology("Must provide password", 400)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        rows = db.execute("SELECT * FROM users WHERE username = ?", username)
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
             return apology("invalid username and/or password", 400)
 
         # Remember which user has logged in
@@ -222,12 +219,15 @@ def register():
         if password != confirmation:
             return apology("Passwords don't match :(", 400)
 
+        if len(password) < 8 or len(login) < 8:
+            return apology("Username and password should be at least 8 characters long!")
+        
         # If username is already in db -> raise an apology
         rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
         if len(rows) != 0:
             return apology("This username is taken :(", 400)
         
-        # Else inert user in db
+        # Else insert user in db
         db.execute("INSERT INTO users (username, hash, cash) VALUES(?, ?, 10000)", login, generate_password_hash(password))
 
         # Redirect user to home page
@@ -329,3 +329,22 @@ def sell_all():
     # Show the message
     flash("Sold all!")
     return redirect("/")
+
+
+@app.route("/predict", methods=["GET", "POST"])
+@app.route("/predict/<symbol>", methods=["GET", "POST"])
+@login_required
+def predict(symbol=None):
+    # Post method
+    if request.method == "POST":
+        symbol = request.values.get("symbol")
+        if not symbol:
+            return apology("You need to pick something", 400)
+
+        make_predictions(symbol)
+
+    # Get method
+    if not symbol or symbol not in ("AAPL","AMZN", "GOOGL", "MSFT", "TSLA", "VOO", "NVDA"):
+        return render_template("predict.html")
+
+    return render_template("predict.html", img=url_for('static', filename=f'{symbol}.png'))
