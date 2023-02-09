@@ -348,3 +348,4 @@ def predict(symbol=None):
         return render_template("predict.html")
 
     return render_template("predict.html", img=url_for('static', filename=f'{symbol}.png'))
+    
